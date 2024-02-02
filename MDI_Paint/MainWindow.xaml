@@ -1,0 +1,129 @@
+﻿<Fluent:RibbonWindow x:Class="MDI_Paint.MainWindow"
+                     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:Fluent="urn:fluent-ribbon"
+                     Title="MDI_Paint" 
+                     Width="1280" 
+                     Height="720" 
+                     Icon="Images/Logo.png">
+    <Grid Height="698">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Fluent:Ribbon>
+
+            <!--StartScreen-->
+            <Fluent:Ribbon.StartScreen>
+                <Fluent:StartScreen IsOpen="True">
+                    <Fluent:StartScreenTabControl>
+                        <Fluent:StartScreenTabControl.LeftContent>
+                            <StackPanel Orientation="Vertical">
+                                <Label Content="StartScreen"
+                            FontSize="48"
+                            Foreground="{DynamicResource Fluent.Ribbon.Brushes.IdealForegroundColorBrush}" />
+                            </StackPanel>
+                        </Fluent:StartScreenTabControl.LeftContent>
+
+                        <Fluent:StartScreenTabControl.RightContent>
+                            <StackPanel Orientation="Vertical">
+                                <TextBlock VerticalAlignment="Center"
+                                HorizontalAlignment="Center">You can close the start screen by either clicking the button below or by pressing ESC</TextBlock>
+                                <Fluent:Button HorizontalAlignment="Center"
+                                   IsDefinitive="True">Close start screen</Fluent:Button>
+                            </StackPanel>
+                        </Fluent:StartScreenTabControl.RightContent>
+                    </Fluent:StartScreenTabControl>
+                </Fluent:StartScreen>
+            </Fluent:Ribbon.StartScreen>
+
+            <!--Backstage-->
+            <Fluent:Ribbon.Menu>
+                <Fluent:Backstage>
+                    <Fluent:BackstageTabControl>
+                        <Fluent:BackstageTabItem Name="newFile"
+                                                 Header="Создать холст" 
+                                                 Icon="Images/New.png"/>
+
+                        <Fluent:BackstageTabItem Name="open"
+                                                 Header="Открыть"
+                                                 Icon="Images/Open.png"/>
+
+                        <Fluent:BackstageTabItem Name="save"
+                                                 Header="Сохранить"
+                                                 Icon="Images/Save.png"
+                                                 IsEnabled="False"/>
+
+                        <Fluent:BackstageTabItem Name="saveAs"
+                                                 Header="Сохранить как"
+                                                 Icon="Images/SaveAs.png"
+                                                 IsEnabled="False"/>
+
+                        <Fluent:BackstageTabItem Name="about"
+                                                 Header="О программе"
+                                                 Icon="Images/About.png"/>
+                    </Fluent:BackstageTabControl>
+                </Fluent:Backstage>
+            </Fluent:Ribbon.Menu>
+
+            <!--Tabs-->
+            <Fluent:RibbonTabItem Header="Главная">
+                <Fluent:RibbonGroupBox Header="Инструменты">
+                    <Fluent:Button Name="pen"
+                                   Header="Перо" 
+                                   Icon="Images/Pen.png" Width="50" Margin="0,5,0,0" VerticalAlignment="Center" Height="55" Click="pen_Click"/>
+
+                    <Fluent:Button Name="eraser"
+                                   Header="Ластик" 
+                                   Icon="Images/Eraser.png" Width="50" Margin="0,5,0,0" VerticalAlignment="Center" Height="55" Click="eraser_Click"/>
+                </Fluent:RibbonGroupBox>
+
+                <Fluent:RibbonGroupBox Header="Параметры пера">
+                    <Fluent:Spinner Name="thickness"  Header="Толщина" Minimum="1" Maximum="10" Margin="0,5,0,0" Icon="Images/Width.png" MinWidth="128"
+                                    ValueChanged="thickness_ValueChanged" Value="2"/>
+                </Fluent:RibbonGroupBox>
+
+                <Fluent:RibbonGroupBox >
+                    <Fluent:DropDownButton Header="Цвет" Icon="Images/Colors.png" Width="50" Margin="0,5,0,0">
+                        <Fluent:ColorGallery Name="colors" SelectedColorChanged="colors_SelectedColorChanged"/>
+                    </Fluent:DropDownButton>
+                </Fluent:RibbonGroupBox>
+
+                <Fluent:RibbonGroupBox Header="Фигуры" Margin="0,5,0,0">
+                    <Fluent:InRibbonGallery Name="shapes">
+                        <Fluent:GalleryItem Name="line" Width="22" Height="22">
+                            <Fluent:IconPresenter SmallIcon="Images/Line.png" SmallSize="20,20"/>
+                        </Fluent:GalleryItem>
+                        <Fluent:GalleryItem Name="ellipse" Width="22" Height="22">
+                            <Fluent:IconPresenter SmallIcon="Images/Ellipse.png" SmallSize="20,20"></Fluent:IconPresenter>
+                        </Fluent:GalleryItem>
+                        <Fluent:GalleryItem Name="star" Width="22" Height="22">
+                            <Fluent:IconPresenter SmallIcon="Images/Star.png" SmallSize="20,20"></Fluent:IconPresenter>
+                        </Fluent:GalleryItem>
+                    </Fluent:InRibbonGallery>
+                </Fluent:RibbonGroupBox>
+            </Fluent:RibbonTabItem>
+
+            <Fluent:RibbonTabItem Header="Вид">
+                <Fluent:RibbonGroupBox Header="Масштаб">
+                    <Fluent:Button Name="scaleDown" Header="Отдалить" Icon="Images/ScaleDown.png"
+                                   Margin="0,5,0,0" VerticalAlignment="Center" Height="55"></Fluent:Button>
+                    <Fluent:Button Name="scaleUp" Header="Приблизить" Icon="Images/ScaleUp.png"
+                                   Margin="0,5,0,0" VerticalAlignment="Center" Height="55"></Fluent:Button>
+                </Fluent:RibbonGroupBox>
+            </Fluent:RibbonTabItem>
+
+        </Fluent:Ribbon>
+
+        <InkCanvas Name="inkCanvas" Margin="0,121,0,0" Grid.RowSpan="2" EditingMode="None"/>
+
+        <!--<Fluent:Ribbon Margin="0,121,0,0">
+
+</Fluent:Ribbon>-->
+
+        
+
+    </Grid>
+</Fluent:RibbonWindow>
+
