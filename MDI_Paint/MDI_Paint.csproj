@@ -147,5 +147,14 @@
     <Resource Include="Images\ScaleDown.png" />
     <Resource Include="Images\ScaleUp.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Ratio.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\Angles.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Images\CloseTab.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
