@@ -6,8 +6,6 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/Fluent;component/Themes/Generic.xaml" />
-                
-                <ResourceDictionary Source="pack://application:,,,/Fluent;component/Themes/Themes/Light.Blue.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

@@ -6,6 +6,11 @@ using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Collections.Generic;
+using Microsoft.Win32;
+using System.Windows.Media.Imaging;
+using System.Diagnostics;
+using System.IO;
 
 namespace MDI_Paint
 {
@@ -14,6 +19,12 @@ namespace MDI_Paint
     /// </summary>
     public partial class MainWindow
     {
+        private double ZoomMax = 3;
+        private double ZoomMin = 1;
+        private double ZoomSpeed = 0.001;
+        private double Zoom = 1;
+        private List<string> paths = new List<string>();
+        private List<bool> edited = new List<bool>();
         private InkCanvas inkCanvas 
         {
             get 
@@ -32,6 +43,7 @@ namespace MDI_Paint
         private double EndX { get; set; }
         private double EndY { get; set; }
         private int filesCreated { get; set; } = 1;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -39,16 +51,37 @@ namespace MDI_Paint
 
         private void newFile_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            TabItem tab = new TabItem();
-            tab.Header = "Без имени " + filesCreated.ToString();
-            InkCanvas ic = new InkCanvas();
-            ic.Name = "ic" + filesCreated.ToString();
+            CreateNewTab("Без имени " + filesCreated.ToString());
             filesCreated++;
+            paths.Add("");
+            edited.Add(false);
+        }
+
+        private void CreateNewTab(string name)
+        {
+            TabItem tab = new TabItem();
+            tab.Header = name;
+            InkCanvas ic = new InkCanvas();
             ic.MouseLeftButtonDown += inkCanvas_MouseLeftButtonDown;
             ic.MouseMove += inkCanvas_MouseMove;
-            ic.MouseUp += inkCanvas_MouseUp;
+            ic.MouseLeftButtonUp += inkCanvas_MouseLeftButtonUp;
+            ic.MouseLeave += inkCanvas_MouseLeave;
+            ic.MouseWheel += inkCanvas_MouseWheel;
+            ic.StrokeCollected += inkCanvas_StrokeCollected;
+            ic.StrokeErased += inkCanvas_StrokeErased;
             tab.Content = ic;
             tabsController.Items.Add(tab);
+            tab.IsSelected = true;
+        }
+
+        private void inkCanvas_StrokeErased(object sender, RoutedEventArgs e)
+        {
+            edited[tabsController.SelectedIndex] = true;
+        }
+
+        private void inkCanvas_StrokeCollected(object sender, InkCanvasStrokeCollectedEventArgs e)
+        {
+            edited[tabsController.SelectedIndex] = true;
         }
 
         private void tabsController_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -58,30 +91,148 @@ namespace MDI_Paint
 
             pen_Click(new object(), new RoutedEventArgs());
             thickness.Value = inkCanvas.DefaultDrawingAttributes.Width;
+            Zoom = 1;
+            ZoomCanvas(0, new Point(0, 0));
         }
 
         private void closeTab_Click(object sender, RoutedEventArgs e)
         {
-            //SAVE FILE
+            CloseCurrentTab();
+        }
+
+        private void CloseCurrentTab()
+        {
+            if (edited[tabsController.SelectedIndex])
+            {
+                MessageBoxResult result = MessageBox.Show("Файл не сохранен, хотите сохранить?\nДа - сохранить и закрыть\nНет - не сохранять и закрыть\nОтмена - не сохранять и не закрывать", "Предупреждение", MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+
+                switch (result)
+                {
+                    case MessageBoxResult.Yes:
+                        SaveFile();
+                    break;
+
+                    case MessageBoxResult.Cancel:
+                        return;
+                }
+            }
+
+            paths.RemoveAt(tabsController.SelectedIndex);
+            edited.RemoveAt(tabsController.SelectedIndex);
             tabsController.Items.Remove(tabsController.SelectedItem);
         }
 
-        //private void OpenFile_Click(object sender, RoutedEventArgs e)
-        //{
-        //    OpenFileDialog openDialog = new OpenFileDialog
-        //    {
-        //        Filter = "Image Files (*.jpg)|*.jpg|Image Files (*.png)|*.png|Image Files (*.bmp)|*.bmp",
-        //        Title = "Open Image File"
-        //    };
-        //    if (openDialog.ShowDialog() == true)
-        //    {
-        //        BitmapImage image = new BitmapImage();
-        //        image.BeginInit();
-        //        image.UriSource = new Uri(openDialog.FileName, UriKind.RelativeOrAbsolute);
-        //        image.EndInit();
-        //        imgMeasure.Source = image;
-        //    }
-        //}
+        private void open_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            OpenFileDialog openDialog = new OpenFileDialog
+            {
+                Filter = "Image Files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp",
+                Title = "Открыть файл"
+            };
+
+            if (openDialog.ShowDialog() != true)
+            {
+                return; 
+            }
+
+            if (paths.Contains(openDialog.FileName))
+            {
+                MessageBox.Show("Файл занят другой вкладкой", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+            
+            var stream = File.OpenRead(openDialog.FileName);
+
+            BitmapImage bitmapImage = new BitmapImage();
+            bitmapImage.BeginInit();
+            bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+            bitmapImage.StreamSource = stream;
+            bitmapImage.EndInit();
+            stream.Close();
+
+            Image image = new Image
+            {
+                Source = bitmapImage
+            };
+
+            CreateNewTab(openDialog.SafeFileName);
+            inkCanvas.Children.Add(image);
+            paths.Add(openDialog.FileName);
+            edited.Add(false);
+        }
+
+        private void save_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            SaveFile();
+        }
+
+        private void SaveFile()
+        {
+            edited[tabsController.SelectedIndex] = false;
+            if (!File.Exists(paths[tabsController.SelectedIndex]))
+            {
+                SaveFileWithDialog();
+            }
+            else
+            {
+                SaveFileByPath(paths[tabsController.SelectedIndex]);
+            }
+        }
+
+        private void saveAs_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            SaveFileWithDialog();
+        }
+
+        private void SaveFileByPath(string path)
+        {
+            try
+            {
+                Rect rect = new Rect(inkCanvas.RenderSize);
+                RenderTargetBitmap rtb = new RenderTargetBitmap((int)rect.Right,
+                  (int)rect.Bottom, 96d, 96d, PixelFormats.Default);
+                rtb.Render(inkCanvas);
+                BitmapEncoder encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(rtb));
+
+                using (MemoryStream ms = new MemoryStream())
+                {
+                    encoder.Save(ms);
+                    File.WriteAllBytes(path, ms.ToArray());
+                }
+            }
+            catch (Exception)
+            {
+                Trace.WriteLine("Не удалось сохранить файл");
+            }
+        }
+
+        private void SaveFileWithDialog()
+        {
+            var dialog = new SaveFileDialog 
+            {
+                DefaultExt = ".png",
+                Filter = "(.png)|*.png|(.jpg)|*.jpg|(.jpeg)|*.jpeg|(.bmp)|*.bmp"
+            };
+
+            bool? result = dialog.ShowDialog();
+
+            if (result != true)
+            {
+                return;
+            }
+
+            if (paths.Contains(dialog.FileName) && paths.FindIndex(x => x == dialog.FileName) != tabsController.SelectedIndex)
+            {
+                MessageBox.Show("Файл занят другой вкладкой", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            SaveFileByPath(dialog.FileName);
+            paths[tabsController.SelectedIndex] = dialog.FileName;
+            edited[tabsController.SelectedIndex] = false;
+            ((TabItem)tabsController.SelectedItem).Header = dialog.SafeFileName;
+        }
 
         private void pen_Click(object sender, RoutedEventArgs e)
         {
@@ -156,25 +307,26 @@ namespace MDI_Paint
 
         private void inkCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            InkCanvas inkCanvas = (InkCanvas)sender;
             StartX = e.GetPosition(inkCanvas).X;
             StartY = e.GetPosition(inkCanvas).Y;
 
             if (ClickedShape != null)
             {
+                edited[tabsController.SelectedIndex] = true;
+
                 switch (ClickedShape.Name)
                 {
                     case "line":
                         UnreleasedShape = new Line();
                         ((Line)UnreleasedShape).X1 = StartX;
                         ((Line)UnreleasedShape).Y1 = StartY;
-                    break;
+                        break;
 
                     case "ellipse":
                         UnreleasedShape = new Ellipse();
                         InkCanvas.SetLeft(UnreleasedShape, e.GetPosition(inkCanvas).X);
                         InkCanvas.SetTop(UnreleasedShape, e.GetPosition(inkCanvas).Y);
-                    break;
+                        break;
 
                     case "star":
                         UnreleasedShape = new Polyline();
@@ -189,7 +341,6 @@ namespace MDI_Paint
 
         private void inkCanvas_MouseMove(object sender, MouseEventArgs e)
         {
-            InkCanvas inkCanvas = (InkCanvas)sender;
             EndX = e.GetPosition(inkCanvas).X;
             EndY = e.GetPosition(inkCanvas).Y;
 
@@ -204,26 +355,26 @@ namespace MDI_Paint
                     Line line = (Line)UnreleasedShape;
                     line.X2 = EndX;
                     line.Y2 = EndY;
-                break;
+                    break;
 
                 case "ellipse":
                     UnreleasedShape.Width = Math.Abs(StartX - EndX);
                     UnreleasedShape.Height = Math.Abs(StartY - EndY);
                     InkCanvas.SetTop(UnreleasedShape, Math.Min(StartY, EndY));
                     InkCanvas.SetLeft(UnreleasedShape, Math.Min(StartX, EndX));
-                break;
+                    break;
 
                 case "star":
                     Polyline star = (Polyline)UnreleasedShape;
                     star.Points.Clear();
                     int pointsCount = (int)angleCount.Value * 2;
                     double width = Math.Abs(StartX - EndX);
-                    double height = Math.Abs(StartY - EndY);   
+                    double height = Math.Abs(StartY - EndY);
                     double centerX = Math.Min(StartX, EndX) + width / 2;
                     double centerY = Math.Min(StartY, EndY) + height / 2;
                     double x, y;
 
-                    for (int i = 0; i < pointsCount; i++)
+                    for (int i = 0; i < pointsCount + 1; i++)
                     {
                         double radiusX, radiusY;
                         if (i % 2 == 0)
@@ -237,23 +388,17 @@ namespace MDI_Paint
                             radiusY = height / 2 * radiusRatio.Value;
                         }
 
-                        x = centerX + radiusX * Math.Sin(i * 2 * Math.PI / pointsCount + Math.PI / angleCount.Value); 
+                        x = centerX + radiusX * Math.Sin(i * 2 * Math.PI / pointsCount + Math.PI / angleCount.Value);
                         y = centerY + radiusY * Math.Cos(i * 2 * Math.PI / pointsCount + Math.PI / angleCount.Value);
 
                         star.Points.Add(new Point(x, y));
                     }
-
-                    x = centerX + width / 2 * Math.Sin(Math.PI / angleCount.Value);
-                    y = centerY + height / 2 * Math.Cos(Math.PI / angleCount.Value);
-
-                    star.Points.Add(new Point(x, y));
-                break;
+                    break;
             }
         }
 
-        private void inkCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        private void inkCanvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            InkCanvas inkCanvas = (InkCanvas)sender;
             if (UnreleasedShape != null)
             {
                 Stroke stroke;
@@ -262,8 +407,8 @@ namespace MDI_Paint
                     stroke = ConvertLineToStroke(line);
                 }
                 else
-                {  
-                    stroke = ConvertEllipseToStroke(UnreleasedShape);
+                {
+                    stroke = ConvertShapeToStroke(UnreleasedShape);
                 }
                 DrawingAttributes drawingAttributes = new DrawingAttributes
                 {
@@ -279,6 +424,36 @@ namespace MDI_Paint
             }
         }
 
+        private void inkCanvas_MouseLeave(object sender, MouseEventArgs e)
+        {
+            inkCanvas_MouseLeftButtonUp(sender, new MouseButtonEventArgs(e.MouseDevice, e.Timestamp, MouseButton.Left));
+        }
+
+        private void inkCanvas_MouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            ZoomCanvas(e.Delta, e.GetPosition(inkCanvas));
+        }
+
+        private void ZoomCanvas(int delta, Point mousePos)
+        {
+            Zoom += ZoomSpeed * delta;
+            if (Zoom < ZoomMin) { Zoom = ZoomMin; return; }
+            if (Zoom > ZoomMax) { Zoom = ZoomMax; return; }
+
+            zoom.Text = Zoom * 100 + "%";
+
+            if (Zoom > 1)
+            {
+                inkCanvas.RenderTransform = new ScaleTransform(Zoom, Zoom, mousePos.X, mousePos.Y);
+                Debug.WriteLine(tabsController.Width);
+            }
+            else
+            {
+                inkCanvas.RenderTransform = new ScaleTransform(Zoom, Zoom);
+                Debug.WriteLine(tabsController.Width);
+            }
+        }
+
         private Stroke ConvertLineToStroke(Line line)
         {
             StylusPointCollection stylusPoints = new StylusPointCollection
@@ -290,7 +465,7 @@ namespace MDI_Paint
             return new Stroke(stylusPoints);
         }
 
-        private Stroke ConvertEllipseToStroke(Shape shape)
+        private Stroke ConvertShapeToStroke(Shape shape)
         {
             Geometry shapeGeometry = shape.RenderedGeometry;
             PathGeometry pathGeometry = shapeGeometry.GetFlattenedPathGeometry();
@@ -332,6 +507,19 @@ namespace MDI_Paint
                     }
                 }
             }
+        }
+
+        private void RibbonWindow_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (tabsController.Items.Count == 0) { return; }
+
+            tabsController.SelectedIndex = 0;
+            for (; tabsController.Items.Count > 0; ) CloseCurrentTab();
+        }
+
+        private void about_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            MessageBox.Show("Название: MDI_Paint\nВерсия: 1.0.0.0\nСоздатель: Талан Кирилл\n\nCopyright©️ 2024", "О программе MDI_Paint", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }

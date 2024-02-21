@@ -5,10 +5,10 @@
                      Title="MDI_Paint" 
                      Width="1280" 
                      Height="720" 
-                     Icon="Images/Logo.png">
+                     Icon="Images/Logo.png"
+                     Closing="RibbonWindow_Closing">
     <Grid>
         <Fluent:Ribbon>
-            
             <!--Backstage-->
             <Fluent:Ribbon.Menu>
                 <Fluent:Backstage>
@@ -20,21 +20,25 @@
 
                         <Fluent:BackstageTabItem Name="open"
                                                  Header="Открыть"
-                                                 Icon="Images/Open.png"/>
+                                                 Icon="Images/Open.png"
+                                                 MouseDown="open_MouseDown"/>
 
                         <Fluent:BackstageTabItem Name="save"
                                                  Header="Сохранить"
                                                  Icon="Images/Save.png"
+                                                 MouseDown="save_MouseDown"
                                                  IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"/>
 
                         <Fluent:BackstageTabItem Name="saveAs"
                                                  Header="Сохранить как"
                                                  Icon="Images/SaveAs.png"
+                                                 MouseDown="saveAs_MouseDown"
                                                  IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"/>
 
                         <Fluent:BackstageTabItem Name="about"
                                                  Header="О программе"
-                                                 Icon="Images/About.png"/>
+                                                 Icon="Images/About.png"
+                                                 MouseDown="about_MouseDown"/>
                     </Fluent:BackstageTabControl>
                 </Fluent:Backstage>
             </Fluent:Ribbon.Menu>
@@ -54,7 +58,7 @@
                 </Fluent:RibbonGroupBox>
 
                 <Fluent:RibbonGroupBox Header="Параметры" Grid.IsSharedSizeScope="True">
-                    <Fluent:Spinner Name="thickness"  Header="Толщина" Minimum="1" Maximum="10" Margin="0,5,0,0" Icon="Images/Width.png"
+                    <Fluent:Spinner Name="thickness"  Header="Толщина пера" Minimum="1" Maximum="10" Margin="0,5,0,0" Icon="Images/Width.png"
                                     IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
                                     ValueChanged="thickness_ValueChanged" Value="2"/>
                     <Fluent:Spinner Name="radiusRatio" Header="Отношение r/R" Minimum="0.1" Maximum="0.9" Icon="Images/Ratio.png"
@@ -84,9 +88,25 @@
                         </Fluent:GalleryItem>
                     </Fluent:InRibbonGallery>
                 </Fluent:RibbonGroupBox>
+
+                <Fluent:RibbonGroupBox>
+                    <Fluent:Button Name="closeTab" Header="Закрыть вкладку" Icon="Images/CloseTab.png"
+                   IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
+                   Margin="0,5,0,0" VerticalAlignment="Center" Height="72"
+                   Click="closeTab_Click"></Fluent:Button>
+                </Fluent:RibbonGroupBox>
+                   
+                <Fluent:RibbonGroupBox>
+                    <Fluent:TextBox Name="zoom"
+                                    Header="Текущий масштаб"
+                                    IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
+                                    Margin="0,5,0,0"
+                                    Text="100%"
+                                    MinWidth="144"/>
+                </Fluent:RibbonGroupBox>
             </Fluent:RibbonTabItem>
 
-            <Fluent:RibbonTabItem Header="Вид">
+            <Fluent:RibbonTabItem Header="Вид" Visibility="Hidden">
                 <Fluent:RibbonGroupBox Header="Масштаб">
                     <Fluent:Button Name="scaleDown" Header="Отдалить" Icon="Images/ScaleDown.png"
                                    IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
@@ -96,12 +116,6 @@
                                    Margin="0,5,0,0" VerticalAlignment="Center" Height="55"></Fluent:Button>
                 </Fluent:RibbonGroupBox>
 
-                <Fluent:RibbonGroupBox>
-                    <Fluent:Button Name="closeTab" Header="Закрыть вкладку" Icon="Images/CloseTab.png"
-                                   IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
-                                   Margin="0,5,0,0" VerticalAlignment="Center" Height="55"
-                                   Click="closeTab_Click"></Fluent:Button>             
-                </Fluent:RibbonGroupBox>
             </Fluent:RibbonTabItem>
 
         </Fluent:Ribbon>
