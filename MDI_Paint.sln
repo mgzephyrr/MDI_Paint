@@ -5,6 +5,10 @@ VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MDI_Paint", "MDI_Paint\MDI_Paint.csproj", "{DA81F13E-B97E-4C4D-A993-1B510E554106}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginInterface", "PluginInterface\PluginInterface.csproj", "{8D6399B3-6876-4850-8BE4-43D0576578F2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Transforms", "Transforms\Transforms.csproj", "{398B38B8-8EE7-4BE2-BB66-9AB124252E94}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{DA81F13E-B97E-4C4D-A993-1B510E554106}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DA81F13E-B97E-4C4D-A993-1B510E554106}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DA81F13E-B97E-4C4D-A993-1B510E554106}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D6399B3-6876-4850-8BE4-43D0576578F2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D6399B3-6876-4850-8BE4-43D0576578F2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D6399B3-6876-4850-8BE4-43D0576578F2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D6399B3-6876-4850-8BE4-43D0576578F2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{398B38B8-8EE7-4BE2-BB66-9AB124252E94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{398B38B8-8EE7-4BE2-BB66-9AB124252E94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{398B38B8-8EE7-4BE2-BB66-9AB124252E94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{398B38B8-8EE7-4BE2-BB66-9AB124252E94}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

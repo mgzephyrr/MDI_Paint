@@ -11,6 +11,11 @@ using Microsoft.Win32;
 using System.Windows.Media.Imaging;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using PluginInterface;
+using System.Windows.Data;
+using Transforms;
+using System.Threading;
 
 namespace MDI_Paint
 {
@@ -25,6 +30,7 @@ namespace MDI_Paint
         private double Zoom = 1;
         private List<string> paths = new List<string>();
         private List<bool> edited = new List<bool>();
+        private List<IPlugin> pluginsList = new List<IPlugin>();
         private InkCanvas inkCanvas 
         {
             get 
@@ -34,6 +40,10 @@ namespace MDI_Paint
                     return null;
                 }
                 return (InkCanvas)((TabItem)tabsController?.SelectedItem).Content;
+            }
+            set
+            {
+                ((TabItem)tabsController?.SelectedItem).Content = value;
             }
         }
         private GalleryItem ClickedShape { get; set; } = null;
@@ -47,6 +57,7 @@ namespace MDI_Paint
         public MainWindow()
         {
             InitializeComponent();
+            FindPlugins();
         }
 
         private void newFile_MouseDown(object sender, MouseButtonEventArgs e)
@@ -61,14 +72,7 @@ namespace MDI_Paint
         {
             TabItem tab = new TabItem();
             tab.Header = name;
-            InkCanvas ic = new InkCanvas();
-            ic.MouseLeftButtonDown += inkCanvas_MouseLeftButtonDown;
-            ic.MouseMove += inkCanvas_MouseMove;
-            ic.MouseLeftButtonUp += inkCanvas_MouseLeftButtonUp;
-            ic.MouseLeave += inkCanvas_MouseLeave;
-            ic.MouseWheel += inkCanvas_MouseWheel;
-            ic.StrokeCollected += inkCanvas_StrokeCollected;
-            ic.StrokeErased += inkCanvas_StrokeErased;
+            InkCanvas ic = InitiateCanvasEvents(new InkCanvas());
             tab.Content = ic;
             tabsController.Items.Add(tab);
             tab.IsSelected = true;
@@ -150,7 +154,7 @@ namespace MDI_Paint
             bitmapImage.EndInit();
             stream.Close();
 
-            Image image = new Image
+            var image = new System.Windows.Controls.Image
             {
                 Source = bitmapImage
             };
@@ -520,6 +524,153 @@ namespace MDI_Paint
         private void about_MouseDown(object sender, MouseButtonEventArgs e)
         {
             MessageBox.Show("Название: MDI_Paint\nВерсия: 1.0.0.0\nСоздатель: Талан Кирилл\n\nCopyright©️ 2024", "О программе MDI_Paint", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        void FindPlugins()
+        {
+            // папка с плагинами
+            string folder = AppDomain.CurrentDomain.BaseDirectory;
+
+            // Создаем или загружаем конфигурационный файл
+            string configFilePath = System.IO.Path.Combine(folder, "plugins.config");
+            if (!File.Exists(configFilePath))
+            {
+                // Создаем новый конфигурационный файл и записываем в него имена плагинов
+                File.WriteAllLines(configFilePath, new[] { "SepiaPlugin", "ShufflePlugin", "ContrastPlugin" });
+            }
+
+            // Читаем имена плагинов из конфигурационного файла
+            string[] requiredPluginNames = File.ReadAllLines(configFilePath);
+
+            // dll-файлы в этой папке
+            string[] files = Directory.GetFiles(folder, "*.dll");
+
+            foreach (string file in files)
+            {
+                try
+                {
+                    Assembly assembly = Assembly.LoadFile(file);
+
+                    foreach (Type type in assembly.GetTypes())
+                    {
+                        Type iface = type.GetInterface("PluginInterface.IPlugin");
+
+                        if (iface != null)
+                        {
+                            IPlugin plugin = (IPlugin)Activator.CreateInstance(type);
+
+                            // Проверяем, есть ли имя плагина в списке требуемых плагинов
+                            if (Array.Exists(requiredPluginNames, name => name == plugin.Name))
+                            {
+                                pluginsList.Add(plugin);
+
+                                var item = new Fluent.Button();
+                                if (PluginsTab.Visibility == Visibility.Hidden)
+                                {
+                                    item.Margin = new Thickness(0, 5, 0, 0);
+                                    PluginsTab.Visibility = Visibility.Visible;
+                                }
+
+                                item.Header = plugin.ButtonName;
+
+                                async void ClickHandler(object sender, RoutedEventArgs e)
+                                {
+                                    this.IsEnabled = false;
+                                    ProgressBarWindow progressBarWindow = new ProgressBarWindow();
+                                    progressBarWindow.Owner = this; // Устанавливаем владельца для модального окна
+                                    progressBarWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner; // Позиционируем окно по центру владельца
+                                    progressBarWindow.Show(); // Открываем окно как немодальное
+
+                                    CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+
+                                    progressBarWindow.CancelRequested += (sen, args) =>
+                                    {
+                                        cancellationTokenSource.Cancel();
+                                    };
+
+                                    // Подписка на событие ProgressChanged
+                                    plugin.ProgressChanged += (send, args) =>
+                                    {
+                                        // Обновление прогресс бара в UI-потоке
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            progressBarWindow.UpdateProgress(args.Progress);
+                                        });
+                                    };
+
+                                    try
+                                    {
+                                        // Выполнение операции с асинхронным методом TransformAsync
+                                        edited[tabsController.SelectedIndex] = true;
+                                        var newCanvas = await plugin.Transform(inkCanvas, cancellationTokenSource);
+                                        inkCanvas = InitiateCanvasEvents(newCanvas);
+                                        progressBarWindow.Close();
+                                    }
+                                    catch (OperationCanceledException)
+                                    {
+
+                                    }
+                                    finally
+                                    {
+                                        Dispatcher.Invoke(() =>
+                                        {
+                                            // Разблокируем главное окно
+                                            this.IsEnabled = true;
+                                        });
+                                    }
+                                }
+
+                                item.Click += ClickHandler;
+                                item.SetBinding(IsEnabledProperty, new Binding
+                                {
+                                    ElementName = "tabsController",
+                                    Path = new PropertyPath("Items.Count")
+                                });
+
+                                item.VerticalAlignment = VerticalAlignment.Center;
+                                item.Size = RibbonControlSize.Middle;
+
+                                PluginsTab.Items.Add(item);
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Ошибка загрузки плагина\n" + ex.Message);
+                }
+            }
+        }
+
+        InkCanvas InitiateCanvasEvents(InkCanvas ic)
+        {
+            ic.MouseLeftButtonDown += inkCanvas_MouseLeftButtonDown;
+            ic.MouseMove += inkCanvas_MouseMove;
+            ic.MouseLeftButtonUp += inkCanvas_MouseLeftButtonUp;
+            ic.MouseLeave += inkCanvas_MouseLeave;
+            ic.MouseWheel += inkCanvas_MouseWheel;
+            ic.StrokeCollected += inkCanvas_StrokeCollected;
+            ic.StrokeErased += inkCanvas_StrokeErased;
+
+            return ic;
+        }
+
+        private void plugins_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            string pluginsInfo = "";
+
+            foreach (var plugin in pluginsList) 
+            {
+                var versionAttribute = Attribute.GetCustomAttribute(plugin.GetType(), typeof(VersionAttribute)) as VersionAttribute;
+
+                pluginsInfo += $"{plugin.Name} " + $"by {plugin.Author} " + $"(v.{versionAttribute.Major}.{versionAttribute.Minor})\n";
+            }
+
+            if (pluginsInfo.Length == 0 ) 
+            {
+                pluginsInfo = "У вас нет подключенных плагинов!";
+            }
+            MessageBox.Show(pluginsInfo, "Подключенные плагины", MessageBoxButton.OK, MessageBoxImage.Information);
         }
     }
 }

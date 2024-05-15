@@ -39,6 +39,11 @@
                                                  Header="О программе"
                                                  Icon="Images/About.png"
                                                  MouseDown="about_MouseDown"/>
+
+                        <Fluent:BackstageTabItem Name="plugins"
+                                                 Header="Плагины"
+                                                 Icon="Images/About.png"
+                                                 MouseDown="plugins_MouseDown"/>
                     </Fluent:BackstageTabControl>
                 </Fluent:Backstage>
             </Fluent:Ribbon.Menu>
@@ -91,11 +96,11 @@
 
                 <Fluent:RibbonGroupBox>
                     <Fluent:Button Name="closeTab" Header="Закрыть вкладку" Icon="Images/CloseTab.png"
-                   IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
-                   Margin="0,5,0,0" VerticalAlignment="Center" Height="72"
-                   Click="closeTab_Click"></Fluent:Button>
+                       IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
+                       Margin="0,5,0,0" VerticalAlignment="Center" Height="72"
+                       Click="closeTab_Click"></Fluent:Button>
                 </Fluent:RibbonGroupBox>
-                   
+
                 <Fluent:RibbonGroupBox>
                     <Fluent:TextBox Name="zoom"
                                     Header="Текущий масштаб"
@@ -104,18 +109,8 @@
                                     Text="100%"
                                     MinWidth="144"/>
                 </Fluent:RibbonGroupBox>
-            </Fluent:RibbonTabItem>
 
-            <Fluent:RibbonTabItem Header="Вид" Visibility="Hidden">
-                <Fluent:RibbonGroupBox Header="Масштаб">
-                    <Fluent:Button Name="scaleDown" Header="Отдалить" Icon="Images/ScaleDown.png"
-                                   IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
-                                   Margin="0,5,0,0" VerticalAlignment="Center" Height="55"></Fluent:Button>
-                    <Fluent:Button Name="scaleUp" Header="Приблизить" Icon="Images/ScaleUp.png"
-                                   IsEnabled="{Binding ElementName=tabsController, Path=Items.Count}"
-                                   Margin="0,5,0,0" VerticalAlignment="Center" Height="55"></Fluent:Button>
-                </Fluent:RibbonGroupBox>
-
+                <Fluent:RibbonGroupBox Header="Фильтры" Name="PluginsTab" Visibility="Hidden"/>
             </Fluent:RibbonTabItem>
 
         </Fluent:Ribbon>
