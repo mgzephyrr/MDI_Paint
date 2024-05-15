@@ -7,7 +7,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Threading.Tasks;
 using System.Threading;
-using System.Diagnostics;
 
 namespace Transforms
 {

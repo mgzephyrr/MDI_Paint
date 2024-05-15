@@ -45,7 +45,7 @@ namespace Transforms
         {
             Bitmap newBitmap = new Bitmap(originalBitmap.Width, originalBitmap.Height);
             double contrastFactor = 1.5;
-            int totalPixels = originalBitmap.Width * originalBitmap.Height;
+            int totalPixels = originalBitmap.Height;
             int processedPixels = 0;
 
             for (int y = 0; y < originalBitmap.Height; y++)
@@ -67,13 +67,11 @@ namespace Transforms
 
                     System.Drawing.Color newColor = System.Drawing.Color.FromArgb(originalColor.A, r, g, b);
 
-                    newBitmap.SetPixel(x, y, newColor);
-
-                    processedPixels++;
-                    int progress = (int)((double)processedPixels / totalPixels * 100);
-
-                    OnProgressChanged(progress);
+                    newBitmap.SetPixel(x, y, newColor);             
                 }
+                processedPixels++;
+                int progress = (int)((double)processedPixels / totalPixels * 100);
+                OnProgressChanged(progress);
             }
 
             cts.Token.ThrowIfCancellationRequested();
